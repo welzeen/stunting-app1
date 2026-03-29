@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load ml_filters %}
+{% block title %}Evaluasi Model{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'ml_dashboard' %}">Machine Learning</a></li>
+<li class="breadcrumb-item active">Evaluasi Model</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Evaluasi Model Naive Bayes</h4>
+        <p class="text-muted small">Confusion Matrix &amp; Classification Report</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'export_pdf' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2" style="border-radius:9px;padding:8px 16px">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Export PDF
+        </a>
+        <a href="{% url 'ml_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-3">
+        <div class="card p-4 text-center border-success">
+            <div class="text-muted small fw-semibold mb-1">Akurasi</div>
+            <div class="fw-bold text-success" style="font-size:2rem">{{ model_obj.get_akurasi_persen }}%</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card p-4 text-center border-primary">
+            <div class="text-muted small fw-semibold mb-1">Presisi</div>
+            <div class="fw-bold text-primary" style="font-size:2rem">{{ model_obj.get_presisi_persen }}%</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card p-4 text-center border-warning">
+            <div class="text-muted small fw-semibold mb-1">Recall</div>
+            <div class="fw-bold text-warning" style="font-size:2rem">{{ model_obj.get_recall_persen }}%</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card p-4 text-center border-info">
+            <div class="text-muted small fw-semibold mb-1">F1-Score</div>
+            <div class="fw-bold text-info" style="font-size:2rem">{{ model_obj.get_f1_persen }}%</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-4 text-primary"><i class="bi bi-grid-3x3 me-2"></i>Confusion Matrix</h6>
+            {% if cm_data and cm_data.matrix %}
+            <div class="table-responsive mb-3">
+                <table class="table table-bordered text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="align-middle small">Aktual ↓ \ Prediksi →</th>
+                            {% for label in cm_data.labels %}<th class="small">{{ label }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in cm_data.matrix %}
+                        <tr>
+                            <td class="table-dark fw-semibold text-white small">{{ cm_data.labels|index:forloop.counter0 }}</td>
+                            {% for val in row %}
+                            <td class="fw-bold fs-5 {% if forloop.parentloop.counter0 == forloop.counter0 %}bg-success bg-opacity-25{% else %}bg-danger bg-opacity-10{% endif %}">{{ val }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <canvas id="cmChart" height="230"></canvas>
+            {% else %}
+            <div class="text-center text-muted py-5"><i class="bi bi-exclamation-circle fs-1 d-block mb-2"></i>Data belum tersedia. Pastikan ada data testing berlabel.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-4 text-primary"><i class="bi bi-file-text me-2"></i>Classification Report</h6>
+            {% if cr_data %}
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light"><tr><th>Kelas</th><th class="text-center">Precision</th><th class="text-center">Recall</th><th class="text-center">F1-Score</th><th class="text-center">Support</th></tr></thead>
+                    <tbody>
+                        {% for kelas in kelas_list %}
+                        {% with row=cr_data|dict_get:kelas %}
+                        {% if row %}
+                        <tr>
+                            <td class="fw-semibold small">
+                                <span class="badge {% if kelas == 'Stunting' %}bg-danger{% elif kelas == 'Potensi Stunting' %}bg-warning text-dark{% else %}bg-success{% endif %} me-1">•</span>{{ kelas }}
+                            </td>
+                            <td class="text-center">{{ row|dict_get:'precision'|to_persen }}</td>
+                            <td class="text-center">{{ row|dict_get:'recall'|to_persen }}</td>
+                            <td class="text-center">{{ row|dict_get:'f1-score'|to_persen }}</td>
+                            <td class="text-center fw-semibold">{{ row|dict_get:'support'|floatformat:0 }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                        {% with wa=cr_data|dict_get:'weighted avg' %}{% if wa %}
+                        <tr class="table-secondary fw-bold">
+                            <td>Weighted Avg</td>
+                            <td class="text-center">{{ wa|dict_get:'precision'|to_persen }}</td>
+                            <td class="text-center">{{ wa|dict_get:'recall'|to_persen }}</td>
+                            <td class="text-center">{{ wa|dict_get:'f1-score'|to_persen }}</td>
+                            <td class="text-center">{{ wa|dict_get:'support'|floatformat:0 }}</td>
+                        </tr>
+                        {% endif %}{% endwith %}
+                    </tbody>
+                </table>
+            </div>
+            <canvas id="metricChart" height="200"></canvas>
+            {% else %}
+            <div class="text-center text-muted py-4">Data belum tersedia</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mt-3">
+    <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-book me-2"></i>Interpretasi Metrik</h6>
+    <div class="row g-3">
+        <div class="col-md-3"><div class="p-3 bg-light rounded-3"><div class="fw-semibold small text-success">Akurasi</div><div class="text-muted" style="font-size:.8rem">Persentase prediksi benar dari seluruh data testing.</div></div></div>
+        <div class="col-md-3"><div class="p-3 bg-light rounded-3"><div class="fw-semibold small text-primary">Presisi</div><div class="text-muted" style="font-size:.8rem">Dari semua prediksi suatu kelas, berapa yang benar.</div></div></div>
+        <div class="col-md-3"><div class="p-3 bg-light rounded-3"><div class="fw-semibold small text-warning">Recall</div><div class="text-muted" style="font-size:.8rem">Dari semua data suatu kelas, berapa yang berhasil terdeteksi.</div></div></div>
+        <div class="col-md-3"><div class="p-3 bg-light rounded-3"><div class="fw-semibold small text-info">F1-Score</div><div class="text-muted" style="font-size:.8rem">Rata-rata harmonik presisi dan recall.</div></div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const cmData = {{ cm_json|safe }};
+if (cmData && cmData.matrix && cmData.matrix.length > 0) {
+    const labels = cmData.labels;
+    const colors = ['rgba(22,163,74,0.7)','rgba(217,119,6,0.7)','rgba(220,38,38,0.7)'];
+    const datasets = labels.map((lbl, j) => ({
+        label: lbl, data: cmData.matrix.map(r => r[j]),
+        backgroundColor: colors[j], borderRadius: 4
+    }));
+    new Chart(document.getElementById('cmChart'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: { plugins: { legend: { position:'top' }, title: { display:true, text:'Jumlah Prediksi per Kelas Aktual' }}, scales: { y: { beginAtZero:true }}}
+    });
+}
+{% if cr_data %}
+const crRaw = {{ cr_data|safe }};
+const crLabels = ['Tidak','Potensi Stunting','Stunting'];
+const g = (k,m) => crRaw[k] ? parseFloat(crRaw[k][m]||0) : 0;
+new Chart(document.getElementById('metricChart'), {
+    type: 'bar',
+    data: {
+        labels: crLabels,
+        datasets: [
+            { label:'Precision', data: crLabels.map(k=>g(k,'precision')), backgroundColor:'rgba(37,99,235,0.7)', borderRadius:4 },
+            { label:'Recall',    data: crLabels.map(k=>g(k,'recall')),    backgroundColor:'rgba(217,119,6,0.7)',  borderRadius:4 },
+            { label:'F1-Score',  data: crLabels.map(k=>g(k,'f1-score')),  backgroundColor:'rgba(22,163,74,0.7)',  borderRadius:4 },
+        ]
+    },
+    options: { plugins:{ legend:{ position:'top' }}, scales:{ y:{ beginAtZero:true, max:1 }}}
+});
+{% endif %}
+</script>
+{% endblock %}

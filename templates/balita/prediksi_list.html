@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Riwayat Prediksi{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Riwayat Prediksi</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Riwayat Prediksi</h4>
+        <p class="text-muted small">Semua hasil prediksi stunting yang telah dilakukan</p>
+    </div>
+    <a href="{% url 'prediksi' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus me-1"></i>Prediksi Baru
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">#</th>
+                    <th>Hasil Prediksi</th>
+                    <th>JK</th>
+                    <th>Umur</th>
+                    <th>BB/U</th>
+                    <th>TB/U</th>
+                    <th>Status Gizi</th>
+                    <th>ASI</th>
+                    <th>Prob. Tidak</th>
+                    <th>Prob. Potensi</th>
+                    <th>Prob. Stunting</th>
+                    <th>Diprediksi Oleh</th>
+                    <th>Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in page_obj %}
+            <tr>
+                <td class="ps-4 text-muted small">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                <td>
+                    <span class="badge {% if p.hasil_prediksi == 'Stunting' %}bg-danger{% elif p.hasil_prediksi == 'Potensi Stunting' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                        {{ p.hasil_prediksi }}
+                    </span>
+                </td>
+                <td>{{ p.jenis_kelamin }}</td>
+                <td><span class="badge bg-light text-dark small">{{ p.umur }}</span></td>
+                <td class="small">{{ p.status_bbu }}</td>
+                <td class="small">{{ p.status_tbu }}</td>
+                <td class="small">{{ p.status_gizi }}</td>
+                <td>
+                    <span class="badge {% if p.status_asi == 'Ya' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 {% if p.status_asi == 'Ya' %}text-success{% else %}text-secondary{% endif %}">{{ p.status_asi }}</span>
+                </td>
+                <td class="small">{{ p.probabilitas_tidak|floatformat:4 }}</td>
+                <td class="small">{{ p.probabilitas_potensi|floatformat:4 }}</td>
+                <td class="small">{{ p.probabilitas_stunting|floatformat:4 }}</td>
+                <td class="small">{{ p.predicted_by.username|default:"-" }}</td>
+                <td class="small text-muted">{{ p.predicted_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="13" class="text-center py-5 text-muted">
+                <i class="bi bi-clock-history fs-1 d-block mb-2"></i>Belum ada riwayat prediksi
+            </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 px-4">
+        <small class="text-muted">Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}</small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
